@@ -1,122 +1,287 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useEffect, useState } from "react";
+
+const emptyForm = {
+  studentId: "",
+  name: "",
+  email: "",
+  phone: "",
+  department: "",
+  year: "",
+};
+
+const API_URL =
+  "https://college-management-system-ykbn.onrender.com/api/students";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [students, setStudents] = useState([]);
+  const [formData, setFormData] = useState(emptyForm);
+  const [editingId, setEditingId] = useState(null);
+  const [message, setMessage] = useState("");
+  const [search, setSearch] = useState("");
+
+  const loadStudents = async () => {
+    try {
+      const response = await fetch(API_URL);
+      const data = await response.json();
+      setStudents(data);
+    } catch {
+      setMessage("Could not connect to the backend.");
+    }
+  };
+
+  useEffect(() => {
+    loadStudents();
+  }, []);
+
+  const handleChange = (event) => {
+    setFormData({
+      ...formData,
+      [event.target.name]: event.target.value,
+    });
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    const url = editingId ? `${API_URL}/${editingId}` : API_URL;
+    const method = editingId ? "PUT" : "POST";
+
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          year: Number(formData.year),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data.message || "Could not save the student.");
+        return;
+      }
+
+      setMessage(
+        editingId
+          ? "Student updated successfully."
+          : "Student added successfully."
+      );
+
+      setFormData(emptyForm);
+      setEditingId(null);
+      loadStudents();
+    } catch {
+      setMessage("Could not save the student.");
+    }
+  };
+
+  const handleEdit = (student) => {
+    setFormData({
+      studentId: student.studentId,
+      name: student.name,
+      email: student.email,
+      phone: student.phone,
+      department: student.department,
+      year: student.year,
+    });
+
+    setEditingId(student._id);
+    setMessage("Edit the details and click Update Student.");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleDelete = async (id) => {
+    const confirmed = window.confirm("Do you want to delete this student?");
+
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch(`${API_URL}/${id}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data.message || "Could not delete student.");
+        return;
+      }
+
+      setMessage("Student deleted successfully.");
+      loadStudents();
+    } catch {
+      setMessage("Could not delete student.");
+    }
+  };
+
+  const cancelEdit = () => {
+    setFormData(emptyForm);
+    setEditingId(null);
+    setMessage("");
+  };
+
+  const filteredStudents = students.filter((student) =>
+    `${student.studentId} ${student.name} ${student.department}`
+      .toLowerCase()
+      .includes(search.toLowerCase())
+  );
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
+    <div className="app">
+      <header>
         <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
+          <p>College Management System</p>
+          <h1>Student Records</h1>
         </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+        <span className="count">{students.length} Students</span>
+      </header>
 
-      <div className="ticks"></div>
+      <main>
+        <section className="card">
+          <h2>{editingId ? "Edit Student" : "Add New Student"}</h2>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+          {message && <p className="message">{message}</p>}
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+          <form onSubmit={handleSubmit}>
+            <input
+              name="studentId"
+              placeholder="Student ID (Example: STU001)"
+              value={formData.studentId}
+              onChange={handleChange}
+              required
+            />
+
+            <input
+              name="name"
+              placeholder="Student Name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+            />
+
+            <input
+              name="email"
+              type="email"
+              placeholder="Email Address"
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
+
+            <input
+              name="phone"
+              placeholder="Phone Number"
+              value={formData.phone}
+              onChange={handleChange}
+              required
+            />
+
+            <input
+              name="department"
+              placeholder="Department"
+              value={formData.department}
+              onChange={handleChange}
+              required
+            />
+
+            <select
+              name="year"
+              value={formData.year}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Select Year</option>
+              <option value="1">1st Year</option>
+              <option value="2">2nd Year</option>
+              <option value="3">3rd Year</option>
+              <option value="4">4th Year</option>
+            </select>
+
+            <div className="buttons">
+              <button type="submit">
+                {editingId ? "Update Student" : "Add Student"}
+              </button>
+
+              {editingId && (
+                <button type="button" className="cancel" onClick={cancelEdit}>
+                  Cancel
+                </button>
+              )}
+            </div>
+          </form>
+        </section>
+
+        <section className="card">
+          <div className="table-header">
+            <div>
+              <h2>All Students</h2>
+              <p>View, edit, or delete student records.</p>
+            </div>
+
+            <input
+              className="search"
+              placeholder="Search students..."
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </div>
+
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Student ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Department</th>
+                  <th>Year</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {filteredStudents.length > 0 ? (
+                  filteredStudents.map((student) => (
+                    <tr key={student._id}>
+                      <td>{student.studentId}</td>
+                      <td>{student.name}</td>
+                      <td>{student.email}</td>
+                      <td>{student.phone}</td>
+                      <td>{student.department}</td>
+                      <td>{student.year}</td>
+                      <td className="actions">
+                        <button
+                          className="edit"
+                          onClick={() => handleEdit(student)}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="delete"
+                          onClick={() => handleDelete(student._id)}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="7" className="empty">
+                      No students found. Add your first student.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
 }
 
-export default App
+export default App;
