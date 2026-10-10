@@ -16,7 +16,7 @@ function App() {
   const [message, setMessage] = useState("");
   const [search, setSearch] = useState("");
 
-  const API_URL = "http://localhost:5000/api/students";
+  const API_URL = "https://college-management-system-ykbn.onrender.com";
 
   const loadStudents = async () => {
     try {
